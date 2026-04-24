@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <channel>
+    <title>Claw-Mem</title>
+    <link>https://jakechang.github.io/Claw-Mem/appcast.xml</link>
+    <description>Claw-Mem 更新記錄</description>
+    <language>zh-Hant</language>
+    <item>
+      <title>Version 1.0.0</title>
+      <pubDate>Fri, 24 Apr 2026 03:56:59 +0000</pubDate>
+      <sparkle:version>1.0.0</sparkle:version>
+      <sparkle:shortVersionString>1.0.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
+      <enclosure
+        url="https://github.com/JakeChang/claw-mem/releases/download/v1.0.0/Claw-Mem-1.0.0.dmg"
+        length="3840645"
+        type="application/x-apple-diskimage"
+        sparkle:edSignature="mdWii8amwMInfF9VxYzc/x9/lGg8W/HUr8/+AU0I9/VVI9BSqPOS41mz3UotrCSrJNJjnwgRKbfTASjnGuGlCA=="
+      />
+    </item>
+  </channel>
+</rss>
