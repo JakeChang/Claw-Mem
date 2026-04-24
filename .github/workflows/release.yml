@@ -119,6 +119,7 @@ jobs:
         run: |
           mkdir -p gh-pages-dist
           cp appcast.xml gh-pages-dist/appcast.xml
+          cp index.html gh-pages-dist/index.html
 
       - name: Deploy appcast.xml to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4

@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Claw-Mem — Claude Code 工作記憶助手</title>
+  <meta name="description" content="macOS 選單列應用程式，自動解析 Claude Code 工作紀錄，透過 AI 生成結構化摘要，讓你每天延續開發上下文。" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              400: '#2dd4bf',
+              500: '#14b8a6',
+              600: '#0d9488',
+              700: '#0f766e',
+            }
+          },
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', '"Segoe UI"', 'sans-serif'],
+            mono: ['"SF Mono"', '"Fira Code"', 'monospace'],
+          },
+        }
+      }
+    }
+  </script>
+  <style>
+    .gradient-text {
+      background: linear-gradient(135deg, #fff 0%, #2dd4bf 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .glass {
+      background: rgba(255,255,255,0.04);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+    .glow { box-shadow: 0 0 60px rgba(13, 148, 136, 0.3); }
+  </style>
+</head>
+<body class="bg-[#060b0b] text-white font-sans antialiased">
+
+  <!-- NAV -->
+  <nav class="fixed top-0 inset-x-0 z-50 glass border-b border-white/10">
+    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+      <a href="#" class="flex items-center gap-2.5 font-bold text-base">
+        <div class="w-7 h-7 rounded-lg bg-brand-600 flex items-center justify-center">
+          <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+          </svg>
+        </div>
+        Claw-Mem
+      </a>
+      <ul class="hidden md:flex items-center gap-8 text-sm text-white/60">
+        <li><a href="#features" class="hover:text-white transition-colors">功能</a></li>
+        <li><a href="#setup" class="hover:text-white transition-colors">設定</a></li>
+        <li><a href="#install" class="hover:text-white transition-colors">安裝</a></li>
+        <li>
+          <a href="https://github.com/JakeChang/claw-mem" target="_blank"
+             class="flex items-center gap-1.5 hover:text-white transition-colors">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+            </svg>
+            GitHub
+          </a>
+        </li>
+      </ul>
+      <a href="https://github.com/JakeChang/claw-mem/releases/latest" target="_blank"
+         class="bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+        下載
+      </a>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="pt-40 pb-24 px-6 text-center">
+    <div class="max-w-3xl mx-auto">
+      <div class="inline-flex items-center gap-2 bg-brand-600/10 border border-brand-500/20 text-brand-400 text-xs font-semibold px-4 py-1.5 rounded-full mb-8 tracking-wide uppercase">
+        <span class="w-1.5 h-1.5 rounded-full bg-brand-400 animate-pulse"></span>
+        macOS 選單列 App · 免費開源
+      </div>
+
+      <h1 class="text-6xl md:text-7xl font-extrabold tracking-tight leading-[1.05] mb-6">
+        <span class="gradient-text">Claude Code</span><br/>
+        <span class="gradient-text">工作記憶助手</span>
+      </h1>
+
+      <p class="text-lg text-white/50 max-w-xl mx-auto mb-10 leading-relaxed">
+        Claw-Mem 自動監控 <code class="text-brand-400 bg-brand-600/10 px-1.5 py-0.5 rounded text-sm">~/.claude/projects</code> 的 JSONL 紀錄，透過 Google Gemini 生成結構化摘要，讓你每天無縫延續開發上下文。
+      </p>
+
+      <div class="flex flex-wrap gap-3 justify-center mb-6">
+        <a href="https://github.com/JakeChang/claw-mem/releases/latest" target="_blank"
+           class="inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold px-6 py-3.5 rounded-xl transition-all hover:-translate-y-0.5 glow text-sm">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+          </svg>
+          下載 DMG
+        </a>
+        <a href="https://github.com/JakeChang/claw-mem" target="_blank"
+           class="inline-flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-medium px-6 py-3.5 rounded-xl transition-all hover:-translate-y-0.5 text-sm">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
+          查看原始碼
+        </a>
+      </div>
+
+      <p class="text-xs text-white/30">需要 macOS 15.0 或以上 · Apple Silicon &amp; Intel</p>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section id="features" class="py-24 px-6">
+    <div class="max-w-5xl mx-auto">
+      <p class="text-xs font-bold uppercase tracking-widest text-brand-400 mb-3">功能特色</p>
+      <h2 class="text-4xl font-bold tracking-tight mb-14">記憶你的每一次工作</h2>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+        <div class="col-span-1 sm:col-span-2 bg-white/[0.03] border border-white/10 rounded-2xl p-6 hover:border-brand-500/40 transition-colors">
+          <div class="w-9 h-9 rounded-lg bg-brand-600/20 flex items-center justify-center mb-4">
+            <svg class="w-5 h-5 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+            </svg>
+          </div>
+          <h3 class="font-semibold text-base mb-2">即時監控 JSONL 紀錄</h3>
+          <p class="text-sm text-white/50 leading-relaxed">背景持續偵測 <code class="text-brand-400 bg-brand-600/10 px-1 py-0.5 rounded text-xs">~/.claude/projects</code> 目錄，有新工作紀錄即自動解析入庫，無需手動觸發。</p>
+        </div>
+
+        <div class="col-span-1 sm:col-span-2 bg-white/[0.03] border border-white/10 rounded-2xl p-6 hover:border-brand-500/40 transition-colors">
+          <div class="w-9 h-9 rounded-lg bg-brand-600/20 flex items-center justify-center mb-4">
+            <svg class="w-5 h-5 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+            </svg>
+          </div>
+          <h3 class="font-semibold text-base mb-2">AI 生成結構化摘要</h3>
+          <p class="text-sm text-white/50 leading-relaxed">透過 Google Gemini 串流生成每日工作摘要，涵蓋完成事項、修改檔案清單、遇到的問題與解法，以及未完成的待辦事項。</p>
+        </div>
+
+        <div class="bg-white/[0.03] border border-white/10 rounded-2xl p-6 hover:border-brand-500/40 transition-colors">
+          <div class="w-9 h-9 rounded-lg bg-brand-600/20 flex items-center justify-center mb-4">
+            <svg class="w-5 h-5 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+            </svg>
+          </div>
+          <h3 class="font-semibold text-base mb-2">專案總摘要</h3>
+          <p class="text-sm text-white/50 leading-relaxed">從所有歷史摘要歸納整個專案的全貌：技術棧、架構設計、里程碑與目前狀態。</p>
+        </div>
+
+        <div class="bg-white/[0.03] border border-white/10 rounded-2xl p-6 hover:border-brand-500/40 transition-colors">
+          <div class="w-9 h-9 rounded-lg bg-brand-600/20 flex items-center justify-center mb-4">
+            <svg class="w-5 h-5 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+            </svg>
+          </div>
+          <h3 class="font-semibold text-base mb-2">一鍵複製給 Claude</h3>
+          <p class="text-sm text-white/50 leading-relaxed">格式化摘要為 prompt，貼到新對話即可讓 Claude 立刻掌握上下文，無縫延續開發。</p>
+        </div>
+
+        <div class="bg-white/[0.03] border border-white/10 rounded-2xl p-6 hover:border-brand-500/40 transition-colors">
+          <div class="w-9 h-9 rounded-lg bg-brand-600/20 flex items-center justify-center mb-4">
+            <svg class="w-5 h-5 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+          </div>
+          <h3 class="font-semibold text-base mb-2">日期篩選</h3>
+          <p class="text-sm text-white/50 leading-relaxed">快捷選擇 7 / 30 / 90 天，或自訂日期範圍，快速聚焦特定開發時期的紀錄。</p>
+        </div>
+
+        <div class="bg-white/[0.03] border border-white/10 rounded-2xl p-6 hover:border-brand-500/40 transition-colors">
+          <div class="w-9 h-9 rounded-lg bg-brand-600/20 flex items-center justify-center mb-4">
+            <svg class="w-5 h-5 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/>
+            </svg>
+          </div>
+          <h3 class="font-semibold text-base mb-2">跨裝置同步</h3>
+          <p class="text-sm text-white/50 leading-relaxed">透過 Dropbox 或 iCloud 資料夾同步摘要與備註，在多台 Mac 之間保持工作記憶一致。</p>
+        </div>
+
+        <div class="col-span-1 sm:col-span-2 bg-white/[0.03] border border-white/10 rounded-2xl p-6 hover:border-brand-500/40 transition-colors">
+          <div class="w-9 h-9 rounded-lg bg-brand-600/20 flex items-center justify-center mb-4">
+            <svg class="w-5 h-5 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/>
+            </svg>
+          </div>
+          <h3 class="font-semibold text-base mb-2">Menu Bar 常駐顯示</h3>
+          <p class="text-sm text-white/50 leading-relaxed">右上角選單列即時顯示今日活躍專案數與訊息紀錄數，讓你隨時掌握今天的工作量，點擊即可展開完整的對話瀏覽器。</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <div class="max-w-5xl mx-auto px-6"><div class="border-t border-white/10"></div></div>
+
+  <!-- SETUP -->
+  <section id="setup" class="py-24 px-6">
+    <div class="max-w-3xl mx-auto">
+      <p class="text-xs font-bold uppercase tracking-widest text-brand-400 mb-3">快速設定</p>
+      <h2 class="text-4xl font-bold tracking-tight mb-14">取得 Gemini API Key</h2>
+
+      <div class="flex flex-col gap-8">
+
+        <div class="flex gap-5">
+          <div class="flex-shrink-0 w-9 h-9 rounded-full bg-brand-600/20 border border-brand-500/30 text-brand-400 font-bold text-sm flex items-center justify-center">1</div>
+          <div class="pt-1">
+            <h3 class="font-semibold text-base mb-1.5">前往 Google AI Studio</h3>
+            <p class="text-sm text-white/50 leading-relaxed">
+              開啟 <a href="https://aistudio.google.com/" target="_blank" class="text-brand-400 hover:text-brand-300 transition-colors">aistudio.google.com</a>，使用 Google 帳號登入後，點擊「Get API key」→「Create API key」。
+            </p>
+          </div>
+        </div>
+
+        <div class="flex gap-5">
+          <div class="flex-shrink-0 w-9 h-9 rounded-full bg-brand-600/20 border border-brand-500/30 text-brand-400 font-bold text-sm flex items-center justify-center">2</div>
+          <div class="pt-1">
+            <h3 class="font-semibold text-base mb-1.5">貼入 App 設定</h3>
+            <p class="text-sm text-white/50 leading-relaxed">開啟 Claw-Mem → 右上角設定，將 API Key 貼入對應欄位後按儲存。預設使用 Gemini Flash Lite 模型，也可自行切換。</p>
+          </div>
+        </div>
+
+        <div class="flex gap-5">
+          <div class="flex-shrink-0 w-9 h-9 rounded-full bg-brand-600/20 border border-brand-500/30 text-brand-400 font-bold text-sm flex items-center justify-center">3</div>
+          <div class="pt-1">
+            <h3 class="font-semibold text-base mb-1.5">開始生成摘要</h3>
+            <p class="text-sm text-white/50 leading-relaxed">App 會自動偵測現有的 JSONL 紀錄並開始解析。對任何一天的工作紀錄點擊「生成摘要」，Gemini 即以串流方式輸出結構化內容。</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <div class="max-w-5xl mx-auto px-6"><div class="border-t border-white/10"></div></div>
+
+  <!-- INSTALL -->
+  <section id="install" class="py-24 px-6">
+    <div class="max-w-3xl mx-auto">
+      <p class="text-xs font-bold uppercase tracking-widest text-brand-400 mb-3">安裝指南</p>
+      <h2 class="text-4xl font-bold tracking-tight mb-14">兩步驟開始使用</h2>
+
+      <div class="flex flex-col gap-8">
+
+        <div class="flex gap-5">
+          <div class="flex-shrink-0 w-9 h-9 rounded-full bg-brand-600/20 border border-brand-500/30 text-brand-400 font-bold text-sm flex items-center justify-center">1</div>
+          <div class="pt-1">
+            <h3 class="font-semibold text-base mb-1.5">下載 DMG</h3>
+            <p class="text-sm text-white/50 leading-relaxed">
+              前往 <a href="https://github.com/JakeChang/claw-mem/releases/latest" target="_blank" class="text-brand-400 hover:text-brand-300 transition-colors">Releases</a> 下載最新版本，開啟 DMG 並將 Claw-Mem.app 拖入 Applications 資料夾。
+            </p>
+          </div>
+        </div>
+
+        <div class="flex gap-5">
+          <div class="flex-shrink-0 w-9 h-9 rounded-full bg-brand-600/20 border border-brand-500/30 text-brand-400 font-bold text-sm flex items-center justify-center">2</div>
+          <div class="pt-1 w-full">
+            <h3 class="font-semibold text-base mb-1.5">移除隔離屬性 <span class="text-xs font-normal text-white/40 ml-1">（必要步驟）</span></h3>
+            <p class="text-sm text-white/50 leading-relaxed mb-3">由於 App 未經 Apple 公證，首次開啟前請在終端機執行以下指令，否則 macOS 會阻擋啟動：</p>
+            <div class="flex items-center justify-between gap-4 bg-white/[0.04] border border-white/10 rounded-xl px-4 py-3">
+              <code class="font-mono text-sm text-brand-400">xattr -cr /Applications/Claw-Mem.app</code>
+              <button onclick="copyCmd(this)" class="flex-shrink-0 text-xs text-white/40 border border-white/10 hover:border-brand-500/50 hover:text-brand-400 px-3 py-1.5 rounded-lg transition-all">複製</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <div class="max-w-5xl mx-auto px-6"><div class="border-t border-white/10"></div></div>
+
+  <footer class="py-12 px-6 text-center text-sm text-white/30">
+    <p class="mb-2">
+      <a href="https://github.com/JakeChang/claw-mem" target="_blank" class="hover:text-white/60 transition-colors">GitHub</a>
+      <span class="mx-3">·</span>
+      <a href="https://github.com/JakeChang/claw-mem/releases" target="_blank" class="hover:text-white/60 transition-colors">Releases</a>
+      <span class="mx-3">·</span>
+      <a href="https://github.com/JakeChang/claw-mem/issues" target="_blank" class="hover:text-white/60 transition-colors">回報問題</a>
+    </p>
+    <p class="text-xs text-white/20">MIT License · 本專案與 Anthropic 無關聯</p>
+  </footer>
+
+  <script>
+    function copyCmd(btn) {
+      navigator.clipboard.writeText('xattr -cr /Applications/Claw-Mem.app').then(() => {
+        const orig = btn.textContent;
+        btn.textContent = '已複製';
+        btn.classList.add('text-green-400', 'border-green-500/50');
+        setTimeout(() => {
+          btn.textContent = orig;
+          btn.classList.remove('text-green-400', 'border-green-500/50');
+        }, 2000);
+      });
+    }
+  </script>
+
+</body>
+</html>
