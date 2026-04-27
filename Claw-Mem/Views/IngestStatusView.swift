@@ -5,6 +5,8 @@ struct IngestStatusView: View {
     @Environment(SyncService.self) private var syncService
 
     @State private var showErrors = false
+    @State private var showIngestSheet = false
+    @State private var showSyncSheet = false
 
     private static let timeFormatter: DateFormatter = {
         let f = DateFormatter()
@@ -28,6 +30,12 @@ struct IngestStatusView: View {
             }
         }
         .padding(.horizontal, 4)
+        .sheet(isPresented: $showIngestSheet) {
+            IngestProgressSheet()
+        }
+        .sheet(isPresented: $showSyncSheet) {
+            SyncProgressSheet()
+        }
     }
 
     private var syncProgressPill: some View {
@@ -113,6 +121,7 @@ struct IngestStatusView: View {
 
     private var refreshButton: some View {
         Button {
+            showIngestSheet = true
             coordinator.runIngest()
         } label: {
             Image(systemName: "arrow.clockwise")
@@ -126,6 +135,7 @@ struct IngestStatusView: View {
 
     private var syncButton: some View {
         Button {
+            showSyncSheet = true
             Task { await syncService.syncNow() }
         } label: {
             Image(systemName: "arrow.triangle.2.circlepath")

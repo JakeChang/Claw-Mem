@@ -165,16 +165,17 @@ struct ClawMemApp: App {
                 .environment(settings)
                 .environment(syncService)
                 .onAppear {
-                    ingestCoordinator.startWatching()
-                    Task { await syncService.syncNow() }
+                    // Show previously-ingested data immediately. Ingest
+                    // and sync are now both fully manual — user triggers
+                    // them via the toolbar buttons.
+                    ingestCoordinator.loadInitialIndex()
                     appDelegate.attachMenuBar(coordinator: ingestCoordinator)
                 }
                 .onDisappear {
-                    ingestCoordinator.stopWatching()
+                    ingestCoordinator.stopIngest()
                 }
                 .onChange(of: settings.syncFolderPath) { _, newPath in
                     syncService.setFolder(newPath)
-                    Task { await syncService.syncNow() }
                 }
         }
         .defaultSize(width: NSScreen.main?.visibleFrame.width ?? 1200,

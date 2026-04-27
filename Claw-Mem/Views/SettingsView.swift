@@ -11,6 +11,7 @@ struct SettingsView: View {
     @State private var isTestingConnection = false
     @State private var connectionResult: (Bool, String)?
     @State private var showAPIKey = false
+    @State private var showSyncSheet = false
 
     var body: some View {
         @Bindable var settings = settings
@@ -161,6 +162,7 @@ struct SettingsView: View {
                             Text("尚未同步").font(.callout).foregroundStyle(.tertiary)
                         }
                         Button("立刻同步") {
+                            showSyncSheet = true
                             Task { await syncService.syncNow() }
                         }
                         .controlSize(.small)
@@ -213,6 +215,9 @@ struct SettingsView: View {
         .frame(width: 580, height: 460)
         .onAppear {
             apiKeyInput = settings.geminiAPIKey
+        }
+        .sheet(isPresented: $showSyncSheet) {
+            SyncProgressSheet()
         }
     }
 

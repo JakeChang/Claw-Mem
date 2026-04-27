@@ -3,7 +3,6 @@ import SwiftUI
 struct MainView: View {
     @Environment(IngestCoordinator.self) private var ingestCoordinator
     @Environment(AppSettings.self) private var settings
-    @Environment(SyncService.self) private var syncService
 
     @State private var selectedProject: String?
     @State private var selectedDate: String?
@@ -23,6 +22,32 @@ struct MainView: View {
     }
 
     var body: some View {
+        Group {
+            if ingestCoordinator.hasLoadedInitialIndex {
+                loadedBody
+            } else {
+                loadingBody
+            }
+        }
+        .frame(minWidth: 900, minHeight: 560)
+        .toolbar {
+            ToolbarItem(placement: .automatic) {
+                IngestStatusView()
+            }
+        }
+    }
+
+    private var loadingBody: some View {
+        VStack(spacing: 14) {
+            ProgressView().controlSize(.large)
+            Text("載入索引中…")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var loadedBody: some View {
         HStack(spacing: 0) {
             ProjectsSidebar(
                 selectedProject: $selectedProject,
@@ -76,12 +101,6 @@ struct MainView: View {
             }
         }
         .environment(summaryGenerator)
-        .toolbar {
-            ToolbarItem(placement: .automatic) {
-                IngestStatusView()
-            }
-        }
-        .frame(minWidth: 900, minHeight: 560)
         .task(id: loadKey) {
             guard !loadKey.isEmpty else { return }
             lastSummaryFingerprint = ""
@@ -101,9 +120,6 @@ struct MainView: View {
         }
         .onChange(of: ingestCoordinator.dataVersion) {
             Task { await loadSummaries() }
-        }
-        .onChange(of: ingestCoordinator.localDataVersion) {
-            syncService.scheduleSync()
         }
     }
 

@@ -12,7 +12,6 @@ struct DeleteConfirmView: View {
     let onDone: (Bool) -> Void
 
     @Environment(IngestCoordinator.self) private var coordinator
-    @Environment(SyncService.self) private var syncService
     @Environment(AppSettings.self) private var settings
 
     @State private var stats: DeleteStats?
@@ -171,8 +170,6 @@ struct DeleteConfirmView: View {
             deviceID: settings.deviceID,
             alsoDeleteJSONL: alsoDeleteJSONL
         )
-        // Push the tombstone out so the other device sees it promptly.
-        syncService.scheduleSync(delay: .milliseconds(300))
         onDone(true)
     }
 }

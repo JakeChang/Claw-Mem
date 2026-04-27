@@ -20,43 +20,39 @@ final class IngestCoordinator {
     /// Bumps on ANY data change — local user action OR sync import — so
     /// UI panels (MainView, SummaryPanel) reload their data.
     var dataVersion: Int = 0
-    /// Bumps only on LOCAL changes (ingest, save, delete). Used to drive
-    /// `SyncService.scheduleSync()` without causing a sync→refresh→sync
-    /// feedback loop when imported remote data updates `dataVersion`.
+    /// Bumps only on LOCAL changes (ingest, save, delete). Kept distinct
+    /// from `dataVersion` so future consumers can react to user-driven
+    /// changes without firing on remote sync imports.
     var localDataVersion: Int = 0
     var ingestProgress: Int = 0
     var ingestTotal: Int = 0
+    /// `false` until the first `refreshFromDB()` returns. MainView shows a
+    /// loading skeleton while this is false so the UI doesn't appear frozen
+    /// while ReadActor hydrates the full Message table.
+    var hasLoadedInitialIndex = false
 
     private let ingestActor: IngestActor
     private let readActor: ReadActor
     private let rescanCoordinator: RescanCoordinator
-    private let fileWatcher: FileWatcher
     private var ingestTask: Task<Void, Never>?
-    /// Set when a file-change event arrives while ingest is already running.
-    /// Triggers a follow-up ingest so we don't miss edits made during the
-    /// previous pass.
+    /// Set when the user clicks Refresh while ingest is already running.
+    /// Triggers a follow-up ingest so the second click is honored once the
+    /// in-flight pass completes.
     private var pendingIngest = false
 
     init(modelContainer: ModelContainer, watchPath: String = NSHomeDirectory() + "/.claude/projects") {
         self.ingestActor = IngestActor(modelContainer: modelContainer)
         self.readActor = ReadActor(modelContainer: modelContainer)
         self.rescanCoordinator = RescanCoordinator(watchPath: watchPath)
-        self.fileWatcher = FileWatcher(watchPath: watchPath)
-
-        self.fileWatcher.onChangeDetected = { [weak self] in
-            guard let self else { return }
-            Task { @MainActor in
-                self.runIngest()
-            }
-        }
+        // No FileWatcher: ingest is fully manual. The user triggers
+        // `runIngest()` from the toolbar / menu bar.
     }
 
-    func startWatching() {
-        fileWatcher.start()
-        // Show previously-indexed data immediately so the UI is usable
-        // while background ingest runs.
+    /// Loads the existing index from DB so the UI shows previously-ingested
+    /// data on launch. Does NOT run ingest — ingest is manual, triggered by
+    /// the user via toolbar/menu bar buttons.
+    func loadInitialIndex() {
         Task { await refreshFromDB() }
-        runIngest()
     }
 
     /// Read the current index from DB without running ingest. Lets the UI
@@ -71,8 +67,12 @@ final class IngestCoordinator {
             self.errorCount = errors.count
             self.hasErrors = !errors.isEmpty
             self.dataVersion += 1
+            self.hasLoadedInitialIndex = true
         } catch {
             log.error("Failed to refresh index from DB: \(error)")
+            // Even on failure, drop the loading skeleton so the user can
+            // interact with an empty UI rather than stare at a spinner.
+            self.hasLoadedInitialIndex = true
         }
     }
 
@@ -108,8 +108,7 @@ final class IngestCoordinator {
         }
     }
 
-    func stopWatching() {
-        fileWatcher.stop()
+    func stopIngest() {
         ingestTask?.cancel()
         ingestTask = nil
     }
@@ -128,7 +127,7 @@ final class IngestCoordinator {
         let read = readActor
         let coordinator = rescanCoordinator
 
-        // Detached at userInitiated priority — cancelled on stopWatching().
+        // Detached at userInitiated priority — cancelled on stopIngest().
         // Originally .utility, but the mid-ingest ReadActor refresh would
         // queue behind MainView's user-interactive fetches and trigger
         // priority-inversion warnings. userInitiated puts ingest close enough

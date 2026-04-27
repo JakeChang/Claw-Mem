@@ -37,11 +37,6 @@ final class SyncService {
 
     private weak var coordinator: IngestCoordinator?
     private var folderPath: String = ""
-    private var debounceTask: Task<Void, Never>?
-    private var watcher: FileWatcher?
-    /// Timestamp of our last export. FSEvents fired within this window are
-    /// likely echoes of our own writes and can be safely ignored.
-    private var lastExportAt: Date = .distantPast
     /// Start time of the previous successful sync. Subsequent syncs only
     /// re-export buckets whose records were modified after this moment,
     /// so steady-state syncs touch a handful of buckets instead of all 454.
@@ -62,37 +57,8 @@ final class SyncService {
 
     func setFolder(_ path: String) {
         folderPath = path
-        watcher?.stop()
-        watcher = nil
-        guard !path.isEmpty else { return }
-
-        let w = FileWatcher(watchPath: path)
-        w.onChangeDetected = { [weak self] in
-            Task { @MainActor [weak self] in
-                guard let self else { return }
-                // Ignore FSEvents that fire while we're mid-sync; our own
-                // writes cause these, and a new sync can't start until
-                // `isSyncing` flips back to false anyway.
-                if self.isSyncing { return }
-                // Also skip echoes of our own writes from the last export.
-                if Date().timeIntervalSince(self.lastExportAt) < 5 { return }
-                self.scheduleSync()
-            }
-        }
-        w.start()
-        watcher = w
-    }
-
-    /// Schedules a sync after a short debounce. Safe to call many times in
-    /// rapid succession (e.g. after each of several DB edits).
-    func scheduleSync(delay: Duration = .seconds(2)) {
-        guard isEnabled else { return }
-        debounceTask?.cancel()
-        debounceTask = Task { [weak self] in
-            try? await Task.sleep(for: delay)
-            if Task.isCancelled { return }
-            await self?.syncNow()
-        }
+        // No FileWatcher: sync is fully manual. The user triggers
+        // `syncNow()` from the toolbar / Settings.
     }
 
     func syncNow() async {
@@ -173,7 +139,6 @@ final class SyncService {
             }
         }.value
 
-        lastExportAt = Date()
         lastSyncTime = Date()
 
         if let err = outcome.error {
